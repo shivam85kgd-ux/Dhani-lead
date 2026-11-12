@@ -1,0 +1,6 @@
+{
+  "name": "Dhani Finance Limited - Quick Loan Application",
+  "description": "Authorized Dhani Finance Limited loan lead generation portal offering personal, business, home, and property loans with instant eligibility check and fast processing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

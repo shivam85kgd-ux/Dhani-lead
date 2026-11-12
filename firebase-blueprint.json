@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Customer loan application lead submitted via the Dhani Finance campaign",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "Full legal name of the applicant",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "mobile": {
+          "type": "string",
+          "description": "10-digit Indian mobile number",
+          "pattern": "^[6-9][0-9]{9}$"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the applicant",
+          "minLength": 5,
+          "maxLength": 100
+        },
+        "state": {
+          "type": "string",
+          "description": "Indian State or Union Territory",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "loanPurpose": {
+          "type": "string",
+          "description": "Type of loan applied for",
+          "enum": ["Personal Loan", "Business Loan", "Home Loan", "Property Loan", "Other Loan"]
+        },
+        "loanAmount": {
+          "type": "string",
+          "description": "Required loan amount requested by applicant",
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "Date of submission formatted as YYYY-MM-DD",
+          "minLength": 8,
+          "maxLength": 12
+        },
+        "submissionTime": {
+          "type": "string",
+          "description": "Time of submission formatted as HH:mm:ss",
+          "minLength": 5,
+          "maxLength": 12
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of lead creation"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current processing status of lead",
+          "enum": ["New", "Contacted", "Qualified", "Rejected"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Admin notes on lead interaction",
+          "maxLength": 500
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when lead status was last updated"
+        }
+      },
+      "required": ["fullName", "mobile", "email", "state", "loanPurpose", "submissionDate", "submissionTime", "timestamp", "status"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized staff or administrator profile",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin email address",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "Role identifier",
+          "enum": ["admin", "superadmin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Admin account creation timestamp"
+        }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of loan application leads submitted by prospective borrowers"
+    },
+    "/test/connection": {
+      "schema": "AdminUser",
+      "description": "Connection health verification document"
+    },
+    "/settings/{settingId}": {
+      "schema": "AdminUser",
+      "description": "Global application configuration settings such as helpline number and visibility"
+    },
+    "/admins/{adminId}": {
+      "schema": "AdminUser",
+      "description": "Collection of authorized admin users allowed to view and manage leads"
+    }
+  }
+}

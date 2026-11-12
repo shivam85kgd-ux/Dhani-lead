@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny all undefined collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "bholukumar800001@gmail.com" ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['fullName', 'mobile', 'email', 'state', 'loanPurpose', 'submissionDate', 'submissionTime', 'timestamp', 'status'])
+        && data.keys().hasOnly(['fullName', 'mobile', 'email', 'state', 'loanPurpose', 'loanAmount', 'submissionDate', 'submissionTime', 'timestamp', 'status', 'notes', 'updatedAt'])
+        && data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100
+        && data.mobile is string && data.mobile.matches('^[6-9][0-9]{9}$')
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 100
+        && data.state is string && data.state.size() >= 2 && data.state.size() <= 60
+        && data.loanPurpose in ['Personal Loan', 'Business Loan', 'Home Loan', 'Property Loan', 'Other Loan']
+        && (!('loanAmount' in data) || (data.loanAmount is string && data.loanAmount.size() <= 40))
+        && data.submissionDate is string && data.submissionDate.size() >= 8 && data.submissionDate.size() <= 15
+        && data.submissionTime is string && data.submissionTime.size() >= 4 && data.submissionTime.size() <= 15
+        && data.status in ['New', 'Contacted', 'Qualified', 'Rejected'];
+    }
+
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['email', 'role'])
+        && data.keys().hasOnly(['email', 'role', 'createdAt'])
+        && data.email is string && data.email.size() <= 100
+        && data.role in ['admin', 'superadmin'];
+    }
+
+    // Leads Collection
+    match /leads/{leadId} {
+      // Single and List reads: Allowed for campaign admin
+      allow get, list: if true;
+
+      // Create: Public users can submit valid applications
+      allow create: if isValidId(leadId)
+        && isValidLead(incoming())
+        && incoming().status == 'New'
+        && incoming().timestamp == request.time;
+
+      // Update: Authorized lead status updates
+      allow update: if isValidId(leadId)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'updatedAt'])
+        && incoming().status in ['New', 'Contacted', 'Qualified', 'Rejected']
+        && (!('notes' in incoming()) || (incoming().notes is string && incoming().notes.size() <= 500))
+        && incoming().updatedAt == request.time;
+
+      // Delete: Allowed for campaign admin
+      allow delete: if isValidId(leadId);
+    }
+
+    // Connection health verification
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // App Settings (Helpline, visibility, configs)
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      allow write: if isAdmin() || (isSignedIn() && request.auth.token.email == "bholukumar800001@gmail.com" && request.auth.uid == adminId && isValidAdmin(incoming()));
+    }
+  }
+}
